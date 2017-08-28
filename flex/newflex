@@ -1,0 +1,78 @@
+%option noyywrap
+%option c++
+%{
+
+	#include <iostream>
+	#include <fstream>
+	#include <regex>
+	#include <map>
+
+	std::map<std::string, int> map;
+
+	void stat(const char* str){
+		std::string line(str);
+		line = line.substr(15, line.length()-2);
+		int j, k;
+		std::string portNum;
+
+		k=line.find('|');
+		portNum = line.substr(k,line.length());
+		std::transform(portNum.begin(), portNum.end(), portNum.begin(), ::tolower);
+		map[portNum]++;
+	}
+
+%}
+
+%%
+
+^([Ee][Dd]2[Kk]:\/\/\|[Ss][Ee][Rr][Vv][Ee][Rr]\|)(([0-9]{1,3}).([0-9]{1,3}).([0-9]{1,3}).([0-9]{1,3}))\|([0-9]{1,5})\|\/$ {
+    std::string line(yytext);
+        int len=line.length();
+        line = line.substr(15,(len-2));
+  
+        int k = line.find('|');
+        std::string portNum = line.substr(k,line.length());
+          
+        line=line.substr(0,k);
+           
+        bool goodip=true;
+        for(int i=0;i<3;i++){
+            int p=line.find('.');
+            std::string octet = line.substr(0,p);
+            
+            if(atoi(octet.c_str())>255)
+                goodip=false;
+            line=line.substr(p+1,line.length());
+            
+       }
+
+       int p=line.find('.');
+            std::string octet = line.substr(0,p);
+            
+            if(atoi(octet.c_str())>255)
+                goodip=false;
+            line=line.substr(p+1,line.length());
+
+    if((atoi(portNum.c_str())<65535)&&goodip){
+
+      stat(yytext);
+	std::cout << yytext << std::endl;
+}
+}
+
+. {}
+%%
+
+int main(int argc, char * argv[]) {
+	std::string fileName = "Input.txt";
+    FlexLexer* lexer = new yyFlexLexer();
+
+    std::ifstream f(fileName);
+    lexer->yylex(&f);
+    for(auto it = map.begin();it!=map.end();++it){
+        std::cout<<it->first<<" - "<<it->second<<std::endl;
+    }
+    return 0;
+}
+
+
